@@ -7,13 +7,20 @@ st.set_page_config(page_title="FrigoChef AI", page_icon="🍳", layout="centered
 st.title("🍳 FrigoChef AI")
 st.write("Transforme tes restes de frigo en repas gourmands, rapides et économiques !")
 
-# Barre latérale pour la clé d'API et les paramètres
 st.sidebar.header("⚙️ Configuration & Préférences")
-groq_api_key = st.sidebar.text_input(
-    "Clé d'API Groq (gratuite)", 
-    type="password",
-    help="Obtiens ta clé gratuite sur console.groq.com"
-)
+
+# Récupération automatique de la clé via les Secrets Streamlit Cloud
+groq_api_key = st.secrets.get("GROQ_API_KEY", "")
+
+# Si la clé n'est pas dans les Secrets, on affiche le champ de saisie
+if not groq_api_key:
+    groq_api_key = st.sidebar.text_input(
+        "Clé d'API Groq (gratuite)", 
+        type="password",
+        help="Obtiens ta clé gratuite sur console.groq.com"
+    )
+else:
+    st.sidebar.success("Clé d'API activée 🔒")
 
 # Configuration de l'utilisateur
 temps_max = st.sidebar.slider("Temps de préparation max (minutes)", 10, 90, 30, step=5)
@@ -60,14 +67,12 @@ Rédige la réponse en français de manière conviviale, engageante et motivante
 """
 
 def generer_recette_groq(client, prompt):
-    # Récupération dynamique des modèles actifs sur ton compte Groq
     try:
         models_data = client.models.list().data
         modeles_disponibles = [m.id for m in models_data]
     except Exception:
         modeles_disponibles = []
 
-    # Priorité aux modèles récents maintenus par Groq
     priorites = [
         "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
@@ -75,10 +80,7 @@ def generer_recette_groq(client, prompt):
         "gemma2-9b-it"
     ]
     
-    # On sélectionne en priorité les modèles valides sur l'API
     modeles_a_tester = [m for m in priorites if m in modeles_disponibles]
-    
-    # En cas de doute, on prend la liste complète retournée par l'API
     if not modeles_a_tester:
         modeles_a_tester = modeles_disponibles if modeles_disponibles else ["llama-3.3-70b-versatile"]
 
@@ -101,7 +103,7 @@ def generer_recette_groq(client, prompt):
 # Bouton de génération
 if st.button("Générer ma recette & estimer le coût 🍽️"):
     if not groq_api_key:
-        st.error("Veuillez saisir votre clé d'API Groq dans le menu à gauche.")
+        st.error("Aucune clé d'API détectée. Veuillez la configurer dans la barre latérale.")
     elif not ingredients.strip():
         st.warning("Veuillez indiquer au moins un ingrédient.")
     else:
