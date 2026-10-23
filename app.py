@@ -91,7 +91,7 @@ def generer_recette_groq(client, prompt):
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
-                max_tokens=2000
+                max_tokens=20000
             )
             return completion.choices[0].message.content
         except Exception as e:
